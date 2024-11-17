@@ -34,11 +34,21 @@ def deep_merge_dicts(dest, src):
         if isinstance(value, dict) and key in dest and isinstance(dest[key], dict):
             deep_merge_dicts(dest[key], value)
         elif isinstance(value, list) and key in dest and isinstance(dest[key], list):
-            dest[key].extend(value)
+            if key in ["rotation", "translation", "scale"]:
+                dest[key] = value  # Ensure these keys are overwritten, not appended
+            else:
+                dest[key].extend(value)  # Append for other lists
         else:
             dest[key] = value
 
 def combine_jsons(zip_files, json_types, output_dir):
+    output_dir = Path(output_dir)
+    if output_dir.is_file():
+        print(f"Error: Output directory path is a file: {output_dir}")
+        return
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+
     for json_type in json_types:
         combined_data = {}
         json_filename = f"{json_type}.json"
@@ -70,7 +80,7 @@ def combine_jsons(zip_files, json_types, output_dir):
             clean_directory(extract_path)
             safe_rmdir(extract_path)
 
-        output_file = Path(output_dir) / f"combined_{json_filename}"
+        output_file = output_dir / f"combined_{json_filename}"
         with open(output_file, 'w') as file:
             json.dump(combined_data, file, indent=4)
         print(f"Combined JSON file created at {output_file}")
